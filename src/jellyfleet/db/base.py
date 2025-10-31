@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 Base = declarative_base()
 
