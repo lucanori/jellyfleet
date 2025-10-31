@@ -4,6 +4,13 @@ from jellyfleet.db.base import create_database_engine, create_session_factory
 from jellyfleet.db.models import SyncRun
 from jellyfleet.db.repository import SyncRepository
 
+EXPECTED_ACTIONS_COUNT = 5
+EXPECTED_CHILDREN_COUNT = 2
+EXPECTED_TOTAL_DOMAINS = 4
+EXPECTED_MODIFIED_DOMAINS = 3
+EXPECTED_LIBRARY_COUNT = 2
+EXPECTED_REMAINING_COUNT = 2
+
 
 @pytest.fixture
 def in_memory_db():
@@ -52,14 +59,14 @@ def test_complete_sync_run_success(repository):
     completed = repository.complete_sync_run(
         sync_run.id,
         status="completed",
-        actions_count=5,
+        actions_count=EXPECTED_ACTIONS_COUNT,
         details="Sync completed successfully",
     )
 
     assert completed.id == sync_run.id
     assert completed.status == "completed"
     assert completed.completed_at is not None
-    assert completed.actions_count == 5
+    assert completed.actions_count == EXPECTED_ACTIONS_COUNT
     assert completed.details == "Sync completed successfully"
     assert completed.error_message is None
 
@@ -93,7 +100,7 @@ def test_get_recent_sync_runs(repository):
     repository.create_sync_run("combo2", "father2", "child2", ["libraries"])
 
     recent = repository.get_recent_sync_runs()
-    assert len(recent) == 2
+    assert len(recent) == EXPECTED_CHILDREN_COUNT
     assert recent[0].combination_name == "combo2"
     assert recent[1].combination_name == "combo1"
 
@@ -104,7 +111,7 @@ def test_get_recent_sync_runs_by_combination(repository):
     repository.create_sync_run("combo1", "father1", "child1", ["settings"])
 
     combo1_runs = repository.get_recent_sync_runs(combination_name="combo1")
-    assert len(combo1_runs) == 2
+    assert len(combo1_runs) == EXPECTED_CHILDREN_COUNT
     assert all(run.combination_name == "combo1" for run in combo1_runs)
 
 
@@ -114,7 +121,7 @@ def test_get_sync_runs_for_pair(repository):
     repository.create_sync_run("combo3", "father1", "child2", ["users"])
 
     pair_runs = repository.get_sync_runs_for_pair("father1", "child1")
-    assert len(pair_runs) == 2
+    assert len(pair_runs) == EXPECTED_CHILDREN_COUNT
     assert all(
         run.father_server == "father1" and run.child_server == "child1"
         for run in pair_runs
@@ -125,11 +132,13 @@ def test_apply_retention_policy(repository):
     for i in range(5):
         repository.create_sync_run(f"combo{i}", "father", "child", ["users"])
 
-    deleted_count = repository.apply_retention_policy(keep_per_pair=3)
-    assert deleted_count == 2
+    deleted_count = repository.apply_retention_policy(
+        keep_per_pair=EXPECTED_MODIFIED_DOMAINS
+    )
+    assert deleted_count == EXPECTED_CHILDREN_COUNT
 
     remaining_runs = repository.get_sync_runs_for_pair("father", "child")
-    assert len(remaining_runs) == 3
+    assert len(remaining_runs) == EXPECTED_MODIFIED_DOMAINS
 
 
 def test_apply_retention_policy_multiple_pairs(repository):
@@ -137,13 +146,15 @@ def test_apply_retention_policy_multiple_pairs(repository):
         repository.create_sync_run(f"combo{i}", "father1", "child1", ["users"])
         repository.create_sync_run(f"combo{i}", "father2", "child2", ["users"])
 
-    deleted_count = repository.apply_retention_policy(keep_per_pair=2)
-    assert deleted_count == 4
+    deleted_count = repository.apply_retention_policy(
+        keep_per_pair=EXPECTED_CHILDREN_COUNT
+    )
+    assert deleted_count == EXPECTED_TOTAL_DOMAINS
 
     remaining_pair1 = repository.get_sync_runs_for_pair("father1", "child1")
     remaining_pair2 = repository.get_sync_runs_for_pair("father2", "child2")
-    assert len(remaining_pair1) == 2
-    assert len(remaining_pair2) == 2
+    assert len(remaining_pair1) == EXPECTED_REMAINING_COUNT
+    assert len(remaining_pair2) == EXPECTED_REMAINING_COUNT
 
 
 def test_get_sync_run(repository):

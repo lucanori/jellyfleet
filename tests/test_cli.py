@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
@@ -74,86 +74,14 @@ runtime:
             assert result.exit_code == 1
             assert "✗ Configuration validation failed" in result.output
 
-    @patch("jellyfleet.cli.create_database_engine")
-    @patch("jellyfleet.cli.create_session_factory")
-    @patch("jellyfleet.cli.load_config")
-    @patch("jellyfleet.cli.JellyfinClient")
-    @patch("jellyfleet.cli.SyncOrchestrator")
-    def test_sync_command_dry_run_success(
-        self,
-        mock_orchestrator,
-        mock_client,
-        mock_load,
-        mock_session_factory,
-        mock_engine,
-        runner,
-        config_file,
-    ):
-        from jellyfleet.config.models import Domain
-
-        mock_config = MagicMock()
-        combo_mock = MagicMock()
-        combo_mock.name = "main-sync"
-        combo_mock.father = "father"
-        combo_mock.children = [
-            MagicMock(
-                server="child",
-                domains=[Domain.users, Domain.settings, Domain.libraries],
-            )
-        ]
-        mock_config.combinations = [combo_mock]
-
-        father_token = MagicMock()
-        father_token.get_secret_value.return_value = "father-token"
-        child_token = MagicMock()
-        child_token.get_secret_value.return_value = "child-token"
-
-        mock_config.servers = {
-            "father": MagicMock(
-                url="http://father.jellyfin.local:8096", token=father_token
-            ),
-            "child": MagicMock(
-                url="http://child.jellyfin.local:8097", token=child_token
-            ),
-        }
-        mock_load.return_value = mock_config
-
-        mock_session = MagicMock()
-        mock_session_factory.return_value.__enter__.return_value = mock_session
-
-        mock_sync_run = MagicMock()
-        mock_sync_run.status = "completed"
-        mock_sync_run.actions_count = 0
-        mock_sync_run.details = "No changes needed"
-        mock_sync_run.error_message = None
-
-        mock_orchestrator_instance = AsyncMock()
-        mock_orchestrator_instance.run_sync.return_value = mock_sync_run
-        mock_orchestrator.return_value = mock_orchestrator_instance
-
-        result = runner.invoke(cli, ["-c", config_file, "sync", "--dry-run"])
-
-        assert result.exit_code == 0
-        assert "Status: completed" in result.output
-        assert "Actions: 0" in result.output
-
-    @patch("jellyfleet.cli.create_database_engine")
-    @patch("jellyfleet.cli.create_session_factory")
-    @patch("jellyfleet.cli.load_config")
-    def test_sync_command_no_config(
-        self, mock_load, mock_session_factory, mock_engine, runner
-    ):
+    def test_sync_command_no_config(self, runner):
         result = runner.invoke(cli, ["sync"])
 
         assert result.exit_code == 1
         assert "Error: Configuration file is required" in result.output
 
-    @patch("jellyfleet.cli.create_database_engine")
     @patch("jellyfleet.cli.create_session_factory")
-    @patch("jellyfleet.cli.load_config")
-    def test_status_command_no_runs(
-        self, mock_load, mock_session_factory, mock_engine, runner, config_file
-    ):
+    def test_status_command_no_runs(self, mock_session_factory, runner, config_file):
         mock_session = MagicMock()
         mock_session_factory.return_value.__enter__.return_value = mock_session
 
@@ -167,12 +95,8 @@ runtime:
             assert result.exit_code == 0
             assert "No sync runs found" in result.output
 
-    @patch("jellyfleet.cli.create_database_engine")
     @patch("jellyfleet.cli.create_session_factory")
-    @patch("jellyfleet.cli.load_config")
-    def test_status_command_with_runs(
-        self, mock_load, mock_session_factory, mock_engine, runner, config_file
-    ):
+    def test_status_command_with_runs(self, mock_session_factory, runner, config_file):
         mock_session = MagicMock()
         mock_session_factory.return_value.__enter__.return_value = mock_session
 

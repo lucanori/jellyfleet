@@ -5,6 +5,10 @@ import pytest
 from jellyfleet.db.models import SyncRun
 from jellyfleet.sync.orchestrator import SyncOrchestrator
 
+# Test constants
+EXPECTED_ZERO_ACTIONS = 0
+EXPECTED_FOUR_ACTIONS = 4
+
 
 class TestSyncOrchestrator:
     @pytest.fixture
@@ -85,7 +89,7 @@ class TestSyncOrchestrator:
 
         # The orchestrator catches individual sync errors and includes them in results
         # so the overall sync should complete successfully with errors in the results
-        result = await orchestrator.run_sync(dry_run=True)
+        await orchestrator.run_sync(dry_run=True)
 
         mock_repository.complete_sync_run.assert_called_once()
         call_args = mock_repository.complete_sync_run.call_args[1]
@@ -195,7 +199,7 @@ class TestSyncOrchestrator:
 
         count = orchestrator._count_actions(results)
 
-        assert count == 0
+        assert count == EXPECTED_ZERO_ACTIONS
 
     def test_count_actions_with_changes(self, orchestrator):
         results = {
@@ -216,7 +220,7 @@ class TestSyncOrchestrator:
 
         count = orchestrator._count_actions(results)
 
-        assert count == 4
+        assert count == EXPECTED_FOUR_ACTIONS
 
     def test_count_actions_ignores_errors(self, orchestrator):
         results = {
@@ -232,4 +236,4 @@ class TestSyncOrchestrator:
 
         count = orchestrator._count_actions(results)
 
-        assert count == 0
+        assert count == EXPECTED_ZERO_ACTIONS

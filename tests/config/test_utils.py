@@ -5,6 +5,13 @@ from unittest.mock import patch
 
 import pytest
 
+from jellyfleet.config.models import (
+    AppConfig,
+    ChildConfig,
+    CombinationConfig,
+    Domain,
+    ServerConfig,
+)
 from jellyfleet.config.utils import (
     ensure_secrets_directory,
     get_config_from_env,
@@ -128,14 +135,6 @@ def test_validate_config_file_path_wrong_extension():
 
 
 def test_merge_config_with_env_empty_overrides():
-    from jellyfleet.config.models import (
-        AppConfig,
-        ChildConfig,
-        CombinationConfig,
-        Domain,
-        ServerConfig,
-    )
-
     config = AppConfig(
         servers={"test_server": ServerConfig(url="http://test", token="test")},
         combinations=[
@@ -157,14 +156,6 @@ def test_merge_config_with_env_empty_overrides():
 
 
 def test_merge_config_with_env_simple_override():
-    from jellyfleet.config.models import (
-        AppConfig,
-        ChildConfig,
-        CombinationConfig,
-        Domain,
-        ServerConfig,
-    )
-
     config = AppConfig(
         servers={"test_server": ServerConfig(url="http://test", token="test")},
         combinations=[
@@ -189,14 +180,6 @@ def test_merge_config_with_env_simple_override():
 
 
 def test_merge_config_with_env_nested_override():
-    from jellyfleet.config.models import (
-        AppConfig,
-        ChildConfig,
-        CombinationConfig,
-        Domain,
-        ServerConfig,
-    )
-
     config = AppConfig(
         servers={"test": ServerConfig(url="http://old", token="old")},
         combinations=[

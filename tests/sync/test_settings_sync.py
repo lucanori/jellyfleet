@@ -104,8 +104,9 @@ class TestSettingsSync:
         }
 
     @pytest.mark.asyncio
+    @pytest.mark.usefixtures("mock_father_client", "mock_child_client")
     async def test_sync_server_settings_no_changes(
-        self, settings_sync, mock_father_client, mock_child_client, sample_father_config
+        self, settings_sync, sample_father_config
     ):
         settings_sync.father_settings.get_server_configuration.return_value = (
             sample_father_config
@@ -124,11 +125,10 @@ class TestSettingsSync:
         settings_sync.child_settings.update_server_configuration.assert_not_called()
 
     @pytest.mark.asyncio
+    @pytest.mark.usefixtures("mock_father_client", "mock_child_client")
     async def test_sync_server_settings_with_changes_dry_run(
         self,
         settings_sync,
-        mock_father_client,
-        mock_child_client,
         sample_father_config,
         sample_child_config,
     ):
@@ -150,11 +150,10 @@ class TestSettingsSync:
         settings_sync.child_settings.update_server_configuration.assert_not_called()
 
     @pytest.mark.asyncio
+    @pytest.mark.usefixtures("mock_father_client", "mock_child_client")
     async def test_sync_server_settings_with_changes_apply(
         self,
         settings_sync,
-        mock_father_client,
-        mock_child_client,
         sample_father_config,
         sample_child_config,
     ):
@@ -164,7 +163,6 @@ class TestSettingsSync:
         settings_sync.child_settings.get_server_configuration.return_value = (
             sample_child_config
         )
-        mock_child_client.update_server_configuration.return_value = None
 
         result = await settings_sync.sync_server_settings(dry_run=False)
 
@@ -184,16 +182,14 @@ class TestSettingsSync:
         assert "UnsyncableField" not in call_args
 
     @pytest.mark.asyncio
-    async def test_sync_server_settings_with_error(
-        self, settings_sync, mock_father_client, mock_child_client
-    ):
+    @pytest.mark.usefixtures("mock_father_client", "mock_child_client")
+    async def test_sync_server_settings_with_error(self, settings_sync):
         settings_sync.father_settings.get_server_configuration.side_effect = Exception(
             "API Error"
         )
 
         result = await settings_sync.sync_server_settings(dry_run=True)
 
-        # When there's an error, only errors key is returned
         assert "modified" not in result
         assert len(result["errors"]) == 1
         assert "Failed to sync server settings" in result["errors"][0]

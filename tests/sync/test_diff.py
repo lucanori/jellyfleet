@@ -8,6 +8,11 @@ from jellyfleet.sync.diff import (
     compute_diff,
 )
 
+EXPECTED_TOTAL_CHANGES = 3
+EXPECTED_ADDED_COUNT = 2
+EXPECTED_REMOVED_COUNT = 2
+EXPECTED_MODIFIED_COUNT = 1
+
 
 class TestDiffResult:
     def test_has_changes_with_no_changes(self):
@@ -28,7 +33,7 @@ class TestDiffResult:
 
     def test_total_changes(self):
         diff = DiffResult([{"id": "1"}], [{"id": "2"}], [({"id": "3"}, {"id": "3"})])
-        assert diff.total_changes == 3
+        assert diff.total_changes == EXPECTED_TOTAL_CHANGES
 
 
 class TestComputeDiff:
@@ -43,7 +48,7 @@ class TestComputeDiff:
         target = []
         result = compute_diff(source, target, lambda x: x["id"])
 
-        assert len(result.added) == 2
+        assert len(result.added) == EXPECTED_ADDED_COUNT
         assert result.removed == []
         assert result.modified == []
         added_names = [item["name"] for item in result.added]
@@ -56,7 +61,7 @@ class TestComputeDiff:
         result = compute_diff(source, target, lambda x: x["id"])
 
         assert result.added == []
-        assert len(result.removed) == 2
+        assert len(result.removed) == EXPECTED_REMOVED_COUNT
         assert result.modified == []
         removed_names = [item["name"] for item in result.removed]
         assert "Alice" in removed_names
@@ -82,7 +87,7 @@ class TestComputeDiff:
 
         assert result.added == []
         assert result.removed == []
-        assert len(result.modified) == 1
+        assert len(result.modified) == EXPECTED_MODIFIED_COUNT
         assert result.modified[0][0]["name"] == "Robert"
         assert result.modified[0][1]["name"] == "Bob"
 

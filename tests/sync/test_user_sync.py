@@ -4,6 +4,10 @@ import pytest
 
 from jellyfleet.sync.users import UserSync
 
+EXPECTED_SINGLE_ITEM = 1
+EXPECTED_ZERO_ITEMS = 0
+EXPECTED_THREE_ITEMS = 3
+
 
 class TestUserSync:
     @pytest.fixture
@@ -17,7 +21,6 @@ class TestUserSync:
     @pytest.fixture
     def user_sync(self, mock_father_client, mock_child_client):
         sync = UserSync(mock_father_client, mock_child_client)
-        # Replace the UsersClient instances with mocks
         sync.father_users = AsyncMock()
         sync.child_users = AsyncMock()
         return sync
@@ -69,11 +72,10 @@ class TestUserSync:
         ]
 
     @pytest.mark.asyncio
+    @pytest.mark.usefixtures("mock_father_client", "mock_child_client")
     async def test_sync_users_dry_run(
         self,
         user_sync,
-        mock_father_client,
-        mock_child_client,
         sample_father_users,
         sample_child_users,
     ):
@@ -82,21 +84,20 @@ class TestUserSync:
 
         result = await user_sync.sync_users(dry_run=True)
 
-        assert len(result["added"]) == 1
+        assert len(result["added"]) == EXPECTED_SINGLE_ITEM
         assert result["added"][0]["name"] == "Bob"
         assert result["added"][0]["action"] == "would_create"
-        assert len(result["removed"]) == 1
+        assert len(result["removed"]) == EXPECTED_SINGLE_ITEM
         assert result["removed"][0]["name"] == "Charlie"
         assert result["removed"][0]["action"] == "would_delete"
-        assert len(result["modified"]) == 0
-        assert len(result["errors"]) == 0
+        assert len(result["modified"]) == EXPECTED_ZERO_ITEMS
+        assert len(result["errors"]) == EXPECTED_ZERO_ITEMS
 
     @pytest.mark.asyncio
+    @pytest.mark.usefixtures("mock_father_client", "mock_child_client")
     async def test_sync_users_with_changes(
         self,
         user_sync,
-        mock_father_client,
-        mock_child_client,
         sample_father_users,
         sample_child_users,
     ):
@@ -108,11 +109,11 @@ class TestUserSync:
 
         result = await user_sync.sync_users(dry_run=False)
 
-        assert len(result["added"]) == 1
+        assert len(result["added"]) == EXPECTED_SINGLE_ITEM
         assert result["added"][0]["name"] == "Bob"
         assert result["added"][0]["action"] == "created"
         assert result["added"][0]["id"] == "new-bob-id"
-        assert len(result["removed"]) == 1
+        assert len(result["removed"]) == EXPECTED_SINGLE_ITEM
         assert result["removed"][0]["name"] == "Charlie"
         assert result["removed"][0]["action"] == "deleted"
 
@@ -122,9 +123,8 @@ class TestUserSync:
         user_sync.child_users.delete_user.assert_called_once_with("child-3")
 
     @pytest.mark.asyncio
-    async def test_sync_users_with_modifications(
-        self, user_sync, mock_father_client, mock_child_client
-    ):
+    @pytest.mark.usefixtures("mock_father_client", "mock_child_client")
+    async def test_sync_users_with_modifications(self, user_sync):
         father_users = [
             {
                 "Id": "father-1",
@@ -145,7 +145,6 @@ class TestUserSync:
         user_sync.father_users.get_users = AsyncMock(return_value=father_users)
         user_sync.child_users.get_users = AsyncMock(return_value=child_users)
 
-        # Configure policy and config mocks to return different values
         user_sync.father_users.get_user_policy = AsyncMock(
             return_value={"IsAdministrator": True}
         )
@@ -159,16 +158,10 @@ class TestUserSync:
             return_value={"AudioLanguagePreference": "es"}
         )
 
-        mock_child_client.update_user = AsyncMock(return_value=None)
-        mock_child_client.update_user_policy = AsyncMock(return_value=None)
-        mock_child_client.update_user_configuration = AsyncMock(return_value=None)
-
         result = await user_sync.sync_users(dry_run=False)
 
-        # Should have 3 modifications: user data, policy, and configuration
-        assert len(result["modified"]) == 3
+        assert len(result["modified"]) == EXPECTED_THREE_ITEMS
 
-        # Check the user data modification
         user_mod = next(m for m in result["modified"] if "updates" in m)
         assert user_mod["name"] == "Alice"
         assert user_mod["updates"]["EnableAutoLogin"] is True
@@ -178,9 +171,8 @@ class TestUserSync:
         )
 
     @pytest.mark.asyncio
-    async def test_sync_user_policies(
-        self, user_sync, mock_father_client, mock_child_client
-    ):
+    @pytest.mark.usefixtures("mock_father_client", "mock_child_client")
+    async def test_sync_user_policies(self, user_sync):
         father_user = {"Id": "father-1", "Name": "Alice"}
         child_user = {"Id": "child-1", "Name": "Alice"}
 
@@ -189,13 +181,12 @@ class TestUserSync:
 
         user_sync.father_users.get_user_policy = AsyncMock(return_value=father_policy)
         user_sync.child_users.get_user_policy = AsyncMock(return_value=child_policy)
-        mock_child_client.update_user_policy = AsyncMock(return_value=None)
 
         results = {"errors": [], "modified": []}
 
         await user_sync._sync_user_policies(father_user, child_user, False, results)
 
-        assert len(results["modified"]) == 1
+        assert len(results["modified"]) == EXPECTED_SINGLE_ITEM
         assert results["modified"][0]["type"] == "policy"
         assert results["modified"][0]["action"] == "updated"
 
@@ -204,9 +195,8 @@ class TestUserSync:
         )
 
     @pytest.mark.asyncio
-    async def test_sync_user_configurations(
-        self, user_sync, mock_father_client, mock_child_client
-    ):
+    @pytest.mark.usefixtures("mock_father_client", "mock_child_client")
+    async def test_sync_user_configurations(self, user_sync):
         father_user = {"Id": "father-1", "Name": "Alice"}
         child_user = {"Id": "child-1", "Name": "Alice"}
 
@@ -219,7 +209,6 @@ class TestUserSync:
         user_sync.child_users.get_user_configuration = AsyncMock(
             return_value=child_config
         )
-        mock_child_client.update_user_configuration = AsyncMock(return_value=None)
 
         results = {"errors": [], "modified": []}
 
@@ -227,7 +216,7 @@ class TestUserSync:
             father_user, child_user, False, results
         )
 
-        assert len(results["modified"]) == 1
+        assert len(results["modified"]) == EXPECTED_SINGLE_ITEM
         assert results["modified"][0]["type"] == "configuration"
         assert results["modified"][0]["action"] == "updated"
 
@@ -236,9 +225,8 @@ class TestUserSync:
         )
 
     @pytest.mark.asyncio
-    async def test_sync_users_with_errors(
-        self, user_sync, mock_father_client, mock_child_client
-    ):
+    @pytest.mark.usefixtures("mock_father_client", "mock_child_client")
+    async def test_sync_users_with_errors(self, user_sync):
         user_sync.father_users.get_users = AsyncMock(
             return_value=[{"Id": "father-1", "Name": "Alice"}]
         )
@@ -249,6 +237,6 @@ class TestUserSync:
 
         result = await user_sync.sync_users(dry_run=False)
 
-        assert len(result["added"]) == 0
-        assert len(result["errors"]) == 1
+        assert len(result["added"]) == EXPECTED_ZERO_ITEMS
+        assert len(result["errors"]) == EXPECTED_SINGLE_ITEM
         assert "Failed to add user Alice" in result["errors"][0]

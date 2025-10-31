@@ -4,6 +4,10 @@ import pytest
 
 from jellyfleet.sync.libraries import LibrarySync
 
+EXPECTED_SINGLE_ITEM = 1
+EXPECTED_ZERO_ITEMS = 0
+EXPECTED_TWO_ITEMS = 2
+
 
 class TestLibrarySync:
     @pytest.fixture
@@ -73,11 +77,10 @@ class TestLibrarySync:
         ]
 
     @pytest.mark.asyncio
+    @pytest.mark.usefixtures("mock_father_client", "mock_child_client")
     async def test_sync_libraries_dry_run(
         self,
         library_sync,
-        mock_father_client,
-        mock_child_client,
         sample_father_libraries,
         sample_child_libraries,
     ):
@@ -88,34 +91,33 @@ class TestLibrarySync:
 
         result = await library_sync.sync_libraries(dry_run=True)
 
-        assert len(result["added"]) == 1
+        assert len(result["added"]) == EXPECTED_SINGLE_ITEM
         assert result["added"][0]["name"] == "TV Shows"
         assert result["added"][0]["action"] == "would_create"
         assert result["added"][0]["collection_type"] == "tvshows"
         assert "/media/tvshows" in result["added"][0]["paths"]
 
-        assert len(result["removed"]) == 1
+        assert len(result["removed"]) == EXPECTED_SINGLE_ITEM
         assert result["removed"][0]["name"] == "Music"
         assert result["removed"][0]["action"] == "would_delete"
 
-        assert len(result["modified"]) == 1
+        assert len(result["modified"]) == EXPECTED_SINGLE_ITEM
         assert result["modified"][0]["name"] == "Movies"
         assert result["modified"][0]["action"] == "would_update"
 
-        assert len(result["errors"]) == 0
+        assert len(result["errors"]) == EXPECTED_ZERO_ITEMS
 
         library_sync.father_libraries.get_libraries.assert_called_once()
         library_sync.child_libraries.get_libraries.assert_called_once()
-        mock_child_client.create_library.assert_not_called()
-        mock_child_client.delete_library.assert_not_called()
-        mock_child_client.update_library.assert_not_called()
+        library_sync.child_libraries.create_library.assert_not_called()
+        library_sync.child_libraries.delete_library.assert_not_called()
+        library_sync.child_libraries.update_library.assert_not_called()
 
     @pytest.mark.asyncio
+    @pytest.mark.usefixtures("mock_father_client", "mock_child_client")
     async def test_sync_libraries_with_changes_apply(
         self,
         library_sync,
-        mock_father_client,
-        mock_child_client,
         sample_father_libraries,
         sample_child_libraries,
     ):
@@ -134,16 +136,16 @@ class TestLibrarySync:
 
         result = await library_sync.sync_libraries(dry_run=False)
 
-        assert len(result["added"]) == 1
+        assert len(result["added"]) == EXPECTED_SINGLE_ITEM
         assert result["added"][0]["name"] == "TV Shows"
         assert result["added"][0]["action"] == "created"
         assert result["added"][0]["id"] == "new-tvshows-id"
 
-        assert len(result["removed"]) == 1
+        assert len(result["removed"]) == EXPECTED_SINGLE_ITEM
         assert result["removed"][0]["name"] == "Music"
         assert result["removed"][0]["action"] == "deleted"
 
-        assert len(result["modified"]) == 1
+        assert len(result["modified"]) == EXPECTED_SINGLE_ITEM
         assert result["modified"][0]["name"] == "Movies"
         assert result["modified"][0]["action"] == "updated"
 
@@ -169,12 +171,11 @@ class TestLibrarySync:
         assert len(result["added"]) == 0
         assert len(result["removed"]) == 0
         assert len(result["modified"]) == 0
-        assert len(result["errors"]) == 0
+        assert len(result["errors"]) == EXPECTED_ZERO_ITEMS
 
     @pytest.mark.asyncio
-    async def test_sync_libraries_with_errors(
-        self, library_sync, mock_father_client, mock_child_client
-    ):
+    @pytest.mark.usefixtures("mock_father_client", "mock_child_client")
+    async def test_sync_libraries_with_errors(self, library_sync):
         library_sync.father_libraries.get_libraries.side_effect = Exception("API Error")
 
         with pytest.raises(Exception, match="API Error"):
@@ -194,7 +195,7 @@ class TestLibrarySync:
 
         paths = library_sync._extract_paths_from_library(library)
 
-        assert len(paths) == 2
+        assert len(paths) == EXPECTED_TWO_ITEMS
         assert "/media/movies" in paths
         assert "/media/movies2" in paths
 
@@ -206,14 +207,14 @@ class TestLibrarySync:
 
         paths = library_sync._extract_paths_from_library(library)
 
-        assert len(paths) == 0
+        assert len(paths) == EXPECTED_ZERO_ITEMS
 
     def test_extract_paths_from_library_no_library_options(self, library_sync):
         library = {"Name": "No Options"}
 
         paths = library_sync._extract_paths_from_library(library)
 
-        assert len(paths) == 0
+        assert len(paths) == EXPECTED_ZERO_ITEMS
 
     def test_extract_library_updates(self, library_sync):
         father_lib = {
@@ -241,7 +242,7 @@ class TestLibrarySync:
         assert "CollectionType" in updates
         assert updates["CollectionType"] == "movies"
         assert "LibraryOptions" in updates
-        assert len(updates["LibraryOptions"]["PathInfos"]) == 2
+        assert len(updates["LibraryOptions"]["PathInfos"]) == EXPECTED_TWO_ITEMS
 
     def test_extract_library_updates_no_changes(self, library_sync):
         lib = {
@@ -256,4 +257,4 @@ class TestLibrarySync:
 
         updates = library_sync._extract_library_updates(lib, lib)
 
-        assert len(updates) == 0
+        assert len(updates) == EXPECTED_ZERO_ITEMS
