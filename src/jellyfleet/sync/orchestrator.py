@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from jellyfleet.db.models import SyncRun
-from jellyfleet.db.repository import SyncRepository
-from jellyfleet.jellyfin.client import JellyfinClient
+if TYPE_CHECKING:
+    from jellyfleet.db.models import SyncRun
+    from jellyfleet.db.repository import SyncRepository
+    from jellyfleet.jellyfin.client import JellyfinClient
+
 from jellyfleet.sync.libraries import LibrarySync
 from jellyfleet.sync.settings import SettingsSync
 from jellyfleet.sync.users import UserSync
@@ -66,8 +68,8 @@ class SyncOrchestrator:
             )
 
         except Exception as err:
+            self.logger.exception("Sync orchestration failed")
             error_message = f"Sync orchestration failed: {err}"
-            self.logger.error(error_message)
 
             self.repository.complete_sync_run(
                 sync_run.id,
@@ -91,21 +93,21 @@ class SyncOrchestrator:
             self.logger.info("Syncing server settings")
             results["settings"] = await self.settings_sync.sync_server_settings(dry_run)
         except Exception as err:
-            self.logger.error("Failed to sync server settings: %s", err)
+            self.logger.exception("Failed to sync server settings")
             results["settings"] = {"errors": [str(err)]}
 
         try:
             self.logger.info("Syncing users")
             results["users"] = await self.user_sync.sync_users(dry_run)
         except Exception as err:
-            self.logger.error("Failed to sync users: %s", err)
+            self.logger.exception("Failed to sync users")
             results["users"] = {"errors": [str(err)]}
 
         try:
             self.logger.info("Syncing libraries")
             results["libraries"] = await self.library_sync.sync_libraries(dry_run)
         except Exception as err:
-            self.logger.error("Failed to sync libraries: %s", err)
+            self.logger.exception("Failed to sync libraries")
             results["libraries"] = {"errors": [str(err)]}
 
         results["end_time"] = datetime.now(timezone.utc).isoformat()
@@ -130,7 +132,8 @@ class SyncOrchestrator:
 
                 if total_actions > 0 or total_errors > 0:
                     formatted_parts.append(
-                        f"{domain.title()}: {total_actions} actions, {total_errors} errors"
+                        f"{domain.title()}: {total_actions} actions, "
+                        f"{total_errors} errors"
                     )
 
         return "; ".join(formatted_parts) if formatted_parts else "No changes needed"

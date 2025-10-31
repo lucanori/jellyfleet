@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from jellyfleet.jellyfin.client import JellyfinClient
+if TYPE_CHECKING:
+    from jellyfleet.jellyfin.client import JellyfinClient
+
 from jellyfleet.jellyfin.libraries import LibrariesClient
 from jellyfleet.sync.diff import compare_libraries, compute_diff
 
@@ -68,8 +70,9 @@ class LibrarySync:
                     )
                 self.logger.info("Library %s would be added", library["Name"])
             except Exception as err:
-                error_msg = f"Failed to add library {library['Name']}: {err}"
-                self.logger.error(error_msg)
+                library_name = library["Name"]
+                self.logger.exception("Failed to add library %s", library_name)
+                error_msg = f"Failed to add library {library_name}: {err}"
                 results["errors"].append(error_msg)
 
         for library in diff.removed:
@@ -93,8 +96,9 @@ class LibrarySync:
                     )
                 self.logger.info("Library %s would be removed", library["Name"])
             except Exception as err:
-                error_msg = f"Failed to remove library {library['Name']}: {err}"
-                self.logger.error(error_msg)
+                library_name = library["Name"]
+                self.logger.exception("Failed to remove library %s", library_name)
+                error_msg = f"Failed to remove library {library_name}: {err}"
                 results["errors"].append(error_msg)
 
         for father_lib, child_lib in diff.modified:
@@ -125,8 +129,9 @@ class LibrarySync:
 
                 self.logger.info("Library %s would be modified", father_lib["Name"])
             except Exception as err:
-                error_msg = f"Failed to modify library {father_lib['Name']}: {err}"
-                self.logger.error(error_msg)
+                library_name = father_lib["Name"]
+                self.logger.exception("Failed to modify library %s", library_name)
+                error_msg = f"Failed to modify library {library_name}: {err}"
                 results["errors"].append(error_msg)
 
         total_actions = (
@@ -156,9 +161,6 @@ class LibrarySync:
 
         if father_lib.get("CollectionType") != child_lib.get("CollectionType"):
             updates["CollectionType"] = father_lib["CollectionType"]
-
-        father_options = father_lib.get("LibraryOptions", {})
-        child_options = child_lib.get("LibraryOptions", {})
 
         father_paths = self._extract_paths_from_library(father_lib)
         child_paths = self._extract_paths_from_library(child_lib)

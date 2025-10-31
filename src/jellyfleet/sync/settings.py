@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from jellyfleet.jellyfin.client import JellyfinClient
+if TYPE_CHECKING:
+    from jellyfleet.jellyfin.client import JellyfinClient
+
 from jellyfleet.jellyfin.settings import SettingsClient
 from jellyfleet.sync.diff import compare_server_configs
 
@@ -63,8 +65,8 @@ class SettingsSync:
             return results
 
         except Exception as err:
+            self.logger.exception("Failed to sync server settings")
             error_msg = f"Failed to sync server settings: {err}"
-            self.logger.error(error_msg)
             return {"errors": [error_msg]}
 
     def _extract_syncable_config(self, config: dict[str, Any]) -> dict[str, Any]:

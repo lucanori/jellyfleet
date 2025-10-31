@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from jellyfleet.jellyfin.client import JellyfinClient
+if TYPE_CHECKING:
+    from jellyfleet.jellyfin.client import JellyfinClient
+
 from jellyfleet.jellyfin.users import UsersClient
 from jellyfleet.sync.diff import (
     compare_user_configs,
@@ -43,7 +45,25 @@ class UserSync:
             "errors": [],
         }
 
-        for user in diff.added:
+        await self._process_added_users(diff.added, dry_run, results)
+        await self._process_removed_users(diff.removed, dry_run, results)
+        await self._process_modified_users(diff.modified, dry_run, results)
+
+        total_actions = (
+            len(results["added"]) + len(results["removed"]) + len(results["modified"])
+        )
+        self.logger.info(
+            "User synchronization completed: %d total actions, %d errors",
+            total_actions,
+            len(results["errors"]),
+        )
+
+        return results
+
+    async def _process_added_users(
+        self, added_users: list[dict[str, Any]], dry_run: bool, results: dict[str, Any]
+    ) -> None:
+        for user in added_users:
             try:
                 if not dry_run:
                     created_user = await self.child_users.create_user(
@@ -65,11 +85,18 @@ class UserSync:
                     )
                 self.logger.info("User %s would be added", user["Name"])
             except Exception as err:
-                error_msg = f"Failed to add user {user['Name']}: {err}"
-                self.logger.error(error_msg)
+                user_name = user["Name"]
+                self.logger.exception("Failed to add user %s", user_name)
+                error_msg = f"Failed to add user {user_name}: {err}"
                 results["errors"].append(error_msg)
 
-        for user in diff.removed:
+    async def _process_removed_users(
+        self,
+        removed_users: list[dict[str, Any]],
+        dry_run: bool,
+        results: dict[str, Any],
+    ) -> None:
+        for user in removed_users:
             try:
                 if not dry_run:
                     await self.child_users.delete_user(user["Id"])
@@ -90,24 +117,20 @@ class UserSync:
                     )
                 self.logger.info("User %s would be removed", user["Name"])
             except Exception as err:
-                error_msg = f"Failed to remove user {user['Name']}: {err}"
-                self.logger.error(error_msg)
+                user_name = user["Name"]
+                self.logger.exception("Failed to remove user %s", user_name)
+                error_msg = f"Failed to remove user {user_name}: {err}"
                 results["errors"].append(error_msg)
 
-        for father_user, child_user in diff.modified:
+    async def _process_modified_users(
+        self,
+        modified_users: list[tuple[dict[str, Any], dict[str, Any]]],
+        dry_run: bool,
+        results: dict[str, Any],
+    ) -> None:
+        for father_user, child_user in modified_users:
             try:
-                user_updates = {}
-
-                if father_user.get("Name") != child_user.get("Name"):
-                    user_updates["Name"] = father_user["Name"]
-
-                if father_user.get("HasPassword") != child_user.get("HasPassword"):
-                    user_updates["HasPassword"] = father_user["HasPassword"]
-
-                if father_user.get("EnableAutoLogin") != child_user.get(
-                    "EnableAutoLogin"
-                ):
-                    user_updates["EnableAutoLogin"] = father_user["EnableAutoLogin"]
+                user_updates = self._extract_user_updates(father_user, child_user)
 
                 if user_updates and not dry_run:
                     await self.child_users.update_user(child_user["Id"], user_updates)
@@ -138,20 +161,26 @@ class UserSync:
 
                 self.logger.info("User %s would be modified", father_user["Name"])
             except Exception as err:
-                error_msg = f"Failed to modify user {father_user['Name']}: {err}"
-                self.logger.error(error_msg)
+                user_name = father_user["Name"]
+                self.logger.exception("Failed to modify user %s", user_name)
+                error_msg = f"Failed to modify user {user_name}: {err}"
                 results["errors"].append(error_msg)
 
-        total_actions = (
-            len(results["added"]) + len(results["removed"]) + len(results["modified"])
-        )
-        self.logger.info(
-            "User synchronization completed: %d total actions, %d errors",
-            total_actions,
-            len(results["errors"]),
-        )
+    def _extract_user_updates(
+        self, father_user: dict[str, Any], child_user: dict[str, Any]
+    ) -> dict[str, Any]:
+        user_updates = {}
 
-        return results
+        if father_user.get("Name") != child_user.get("Name"):
+            user_updates["Name"] = father_user["Name"]
+
+        if father_user.get("HasPassword") != child_user.get("HasPassword"):
+            user_updates["HasPassword"] = father_user["HasPassword"]
+
+        if father_user.get("EnableAutoLogin") != child_user.get("EnableAutoLogin"):
+            user_updates["EnableAutoLogin"] = father_user["EnableAutoLogin"]
+
+        return user_updates
 
     async def _sync_user_policies(
         self,
@@ -187,8 +216,9 @@ class UserSync:
                         }
                     )
         except Exception as err:
-            error_msg = f"Failed to sync policy for user {father_user['Name']}: {err}"
-            self.logger.error(error_msg)
+            user_name = father_user["Name"]
+            self.logger.exception("Failed to sync policy for user %s", user_name)
+            error_msg = f"Failed to sync policy for user {user_name}: {err}"
             results["errors"].append(error_msg)
 
     async def _sync_user_configurations(
@@ -229,8 +259,7 @@ class UserSync:
                         }
                     )
         except Exception as err:
-            error_msg = (
-                f"Failed to sync configuration for user {father_user['Name']}: {err}"
-            )
-            self.logger.error(error_msg)
+            user_name = father_user["Name"]
+            self.logger.exception("Failed to sync configuration for user %s", user_name)
+            error_msg = f"Failed to sync configuration for user {user_name}: {err}"
             results["errors"].append(error_msg)
