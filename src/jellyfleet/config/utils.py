@@ -57,15 +57,16 @@ def validate_config_file_path(path: str | Path) -> Path:
     config_path = Path(path)
 
     if not config_path.exists():
-        raise FileNotFoundError(f"Configuration file not found: {config_path}")
+        message = f"Configuration file not found: {config_path}"
+        raise FileNotFoundError(message)
 
     if not config_path.is_file():
-        raise ValueError(f"Configuration path is not a file: {config_path}")
+        message = f"Configuration path is not a file: {config_path}"
+        raise ValueError(message)
 
     if config_path.suffix not in (".yaml", ".yml"):
-        raise ValueError(
-            f"Configuration file must be YAML (.yaml or .yml): {config_path}"
-        )
+        message = f"Configuration file must be YAML (.yaml or .yml): {config_path}"
+        raise ValueError(message)
 
     return config_path.resolve()
 

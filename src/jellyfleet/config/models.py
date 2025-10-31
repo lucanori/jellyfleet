@@ -36,17 +36,17 @@ class SecretRef(BaseModel):
         return self
 
     def resolve(self, base_path: Path | None = None) -> str:
-        if self.value not in (None, ""):
-            return self.value  # type: ignore[return-value]
-        if self.env not in (None, ""):
-            resolved = os.getenv(self.env)  # type: ignore[arg-type]
+        if self.value is not None and self.value != "":
+            return self.value
+        if self.env is not None and self.env != "":
+            resolved = os.getenv(self.env)
             if resolved is None:
                 message = f"Environment variable {self.env} is not set"
                 raise ValueError(message)
             return resolved
-        if self.file not in (None, ""):
+        if self.file is not None and self.file != "":
             base = Path(base_path or Path.cwd())
-            target = (base / self.file).expanduser()  # type: ignore[arg-type]
+            target = (base / self.file).expanduser()
             if not target.is_file():
                 raise FileNotFoundError(target)
             return target.read_text(encoding="utf-8").strip()
