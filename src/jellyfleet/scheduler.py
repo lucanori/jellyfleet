@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from contextlib import suppress
 from datetime import datetime, timezone
 
 from croniter import croniter
@@ -26,7 +27,7 @@ class Scheduler:
             return
 
         self._running = True
-        self.logger.info(f"Starting scheduler with interval: {self.interval}")
+        self.logger.info("Starting scheduler with interval: %s", self.interval)
 
         self._task = asyncio.create_task(self._run_scheduler())
 
@@ -40,10 +41,8 @@ class Scheduler:
 
         if self._task:
             self._task.cancel()
-            try:
+            with suppress(asyncio.CancelledError):
                 await self._task
-            except asyncio.CancelledError:
-                pass
 
     async def _run_scheduler(self) -> None:
         """Main scheduler loop"""
@@ -60,7 +59,7 @@ class Scheduler:
 
             sleep_seconds = (next_run - now).total_seconds()
             if sleep_seconds > 0:
-                self.logger.debug(f"Next sync in {sleep_seconds:.0f} seconds")
+                self.logger.debug("Next sync in %.0f seconds", sleep_seconds)
                 await asyncio.sleep(min(sleep_seconds, 60))
 
     async def _run_scheduled_sync(self) -> None:
@@ -106,20 +105,25 @@ class Scheduler:
 
                                 sync_run = await orchestrator.run_sync(dry_run=False)
 
+                                combination_name = f"{combo.name}-{child_config.server}"
                                 self.logger.info(
-                                    f"Scheduled sync completed for {combo.name}-{child_config.server}: "
-                                    f"{sync_run.status} ({sync_run.actions_count} actions)"
+                                    "Scheduled sync completed for %s: %s (%d actions)",
+                                    combination_name,
+                                    sync_run.status,
+                                    sync_run.actions_count,
                                 )
 
-                            except Exception as err:
-                                self.logger.error(
-                                    f"Scheduled sync failed for {combo.name}-{child_config.server}: {err}"
+                            except Exception:
+                                combination_name = f"{combo.name}-{child_config.server}"
+                                self.logger.exception(
+                                    "Scheduled sync failed for %s",
+                                    combination_name,
                                 )
             finally:
                 engine.dispose()
 
-        except Exception as err:
-            self.logger.error(f"Scheduled sync failed: {err}")
+        except Exception:
+            self.logger.exception("Scheduled sync failed")
 
     @property
     def is_running(self) -> bool:
