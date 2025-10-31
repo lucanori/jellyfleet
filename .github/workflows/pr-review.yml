@@ -1,0 +1,34 @@
+name: PR Review Trigger
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  trigger-opencode:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Trigger OpenCode Review
+        run: |
+          COMMENT_BODY="/opencode Please review this PR for compliance with .github/CONTRIBUTING.md. Check for: code style, naming conventions, Docker standards, code best practices, API design, testing requirements, and commit message format. Provide specific feedback with file names and line numbers for any non-compliant code, and suggest how to fix it."
+
+          EXISTING_COMMENT=$(gh api \
+            "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --jq '.[] | select(.body | startswith("/opencode")) | .id' \
+            --method GET || echo "")
+
+          if [ -z "$EXISTING_COMMENT" ]; then
+            gh api \
+              "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+              --field body="$COMMENT_BODY" \
+              --method POST
+            echo "OpenCode review triggered successfully"
+          else
+            echo "OpenCode comment already exists, skipping"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
