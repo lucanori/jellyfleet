@@ -1,7 +1,9 @@
 import asyncio
 import logging
 import sys
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import click
 
@@ -11,6 +13,16 @@ from jellyfleet.db.repository import SyncRepository
 from jellyfleet.jellyfin.client import JellyfinClient
 from jellyfleet.scheduler import Scheduler
 from jellyfleet.sync.orchestrator import SyncOrchestrator
+
+
+@dataclass
+class SyncContext:
+    combo: Any
+    child_config: Any
+    father_server: Any
+    child_server: Any
+    repository: SyncRepository
+    dry_run: bool
 
 
 @click.group()
@@ -81,77 +93,12 @@ def sync(
             with session_factory() as session:
                 repository = SyncRepository(session)
 
-                if combination:
-                    combinations = [
-                        c for c in config.combinations if c.name == combination
-                    ]
-                    if not combinations:
-                        click.echo(
-                            f"Error: Combination '{combination}' not found", err=True
-                        )
-                        sys.exit(1)
-                else:
-                    combinations = config.combinations
+                combinations = _get_combinations(config, combination)
+                total_actions, total_errors = await _process_combinations(
+                    combinations, config, repository, dry_run
+                )
 
-                total_actions = 0
-                total_errors = 0
-
-                for combo in combinations:
-                    father_server = config.servers[combo.father]
-
-                    for child_config in combo.children:
-                        child_server = config.servers[child_config.server]
-
-                        click.echo(f"\nSyncing combination: {combo.name}")
-                        click.echo(f"Father: {father_server.url}")
-                        click.echo(f"Child: {child_server.url}")
-                        click.echo(f"Domains: {', '.join(child_config.domains)}")
-                        click.echo(f"Dry run: {dry_run}")
-                        click.echo("-" * 50)
-
-                        try:
-                            father_client = JellyfinClient(
-                                url=str(father_server.url),
-                                token=father_server.token,
-                            )
-
-                            child_client = JellyfinClient(
-                                url=str(child_server.url),
-                                token=child_server.token,
-                            )
-
-                            orchestrator = SyncOrchestrator(
-                                father_client=father_client,
-                                child_client=child_client,
-                                repository=repository,
-                                combination_name=f"{combo.name}-{child_config.server}",
-                                domains=[
-                                    domain.value for domain in child_config.domains
-                                ],
-                            )
-
-                            sync_run = await orchestrator.run_sync(dry_run=dry_run)
-
-                            click.echo(f"Status: {sync_run.status}")
-                            click.echo(f"Actions: {sync_run.actions_count}")
-                            if sync_run.details:
-                                click.echo(f"Details: {sync_run.details}")
-                            if sync_run.error_message:
-                                click.echo(f"Error: {sync_run.error_message}")
-
-                            total_actions += sync_run.actions_count
-                            if sync_run.status == "failed":
-                                total_errors += 1
-
-                        except Exception as err:
-                            click.echo(
-                                f"Failed to sync {combo.name}-{child_config.server}: {err}",
-                                err=True,
-                            )
-                            total_errors += 1
-
-                click.echo(f"\n{'=' * 50}")
-                click.echo(f"Summary: {total_actions} actions, {total_errors} errors")
+                _print_summary(total_actions, total_errors)
 
                 if total_errors > 0:
                     sys.exit(1)
@@ -164,6 +111,107 @@ def sync(
                 engine.dispose()
 
     asyncio.run(_run_sync())
+
+
+def _get_combinations(config, combination):
+    if combination:
+        combinations = [c for c in config.combinations if c.name == combination]
+        if not combinations:
+            error_msg = f"Error: Combination '{combination}' not found"
+            click.echo(error_msg, err=True)
+            sys.exit(1)
+    else:
+        combinations = config.combinations
+    return combinations
+
+
+async def _process_combinations(combinations, config, repository, dry_run):
+    total_actions = 0
+    total_errors = 0
+
+    for combo in combinations:
+        father_server = config.servers[combo.father]
+
+        for child_config in combo.children:
+            child_server = config.servers[child_config.server]
+
+            _print_sync_header(
+                combo, father_server, child_server, child_config, dry_run
+            )
+
+            try:
+                sync_ctx = SyncContext(
+                    combo=combo,
+                    child_config=child_config,
+                    father_server=father_server,
+                    child_server=child_server,
+                    repository=repository,
+                    dry_run=dry_run,
+                )
+                actions, errors = await _sync_combination(sync_ctx)
+                total_actions += actions
+                total_errors += errors
+
+            except Exception as err:
+                error_msg = f"Failed to sync {combo.name}-{child_config.server}: {err}"
+                click.echo(error_msg, err=True)
+                total_errors += 1
+
+    return total_actions, total_errors
+
+
+def _print_sync_header(combo, father_server, child_server, child_config, dry_run):
+    click.echo(f"\nSyncing combination: {combo.name}")
+    click.echo(f"Father: {father_server.url}")
+    click.echo(f"Child: {child_server.url}")
+    domains_str = ", ".join(child_config.domains)
+    click.echo(f"Domains: {domains_str}")
+    click.echo(f"Dry run: {dry_run}")
+    click.echo("-" * 50)
+
+
+async def _sync_combination(sync_ctx: SyncContext):
+    father_client = JellyfinClient(
+        url=str(sync_ctx.father_server.url),
+        token=sync_ctx.father_server.token,
+    )
+
+    child_client = JellyfinClient(
+        url=str(sync_ctx.child_server.url),
+        token=sync_ctx.child_server.token,
+    )
+
+    orchestrator = SyncOrchestrator(
+        father_client=father_client,
+        child_client=child_client,
+        repository=sync_ctx.repository,
+        combination_name=f"{sync_ctx.combo.name}-{sync_ctx.child_config.server}",
+        domains=[domain.value for domain in sync_ctx.child_config.domains],
+    )
+
+    sync_run = await orchestrator.run_sync(dry_run=sync_ctx.dry_run)
+
+    _print_sync_result(sync_run)
+
+    actions = sync_run.actions_count
+    errors = 1 if sync_run.status == "failed" else 0
+    return actions, errors
+
+
+def _print_sync_result(sync_run):
+    click.echo(f"Status: {sync_run.status}")
+    click.echo(f"Actions: {sync_run.actions_count}")
+    if sync_run.details:
+        click.echo(f"Details: {sync_run.details}")
+    if sync_run.error_message:
+        click.echo(f"Error: {sync_run.error_message}")
+
+
+def _print_summary(total_actions, total_errors):
+    separator = "=" * 50
+    click.echo(f"\n{separator}")
+    summary_msg = f"Summary: {total_actions} actions, {total_errors} errors"
+    click.echo(summary_msg)
 
 
 @cli.command()
@@ -185,9 +233,12 @@ def validate(ctx: click.Context) -> None:
 
             for combo in config.combinations:
                 total_domains = sum(len(child.domains) for child in combo.children)
-                click.echo(
-                    f"  - {combo.name}: {total_domains} domain(s) across {len(combo.children)} child/children"
+                children_count = len(combo.children)
+                message = (
+                    f"  - {combo.name}: {total_domains} domain(s) across "
+                    f"{children_count} child/children"
                 )
+                click.echo(message)
 
         asyncio.run(_validate())
 
@@ -222,7 +273,7 @@ def status(ctx: click.Context, limit: int) -> None:
             try:
                 with session_factory() as session:
                     repository = SyncRepository(session)
-                    recent_runs = repository.get_recent_sync_runs(limit)
+                    recent_runs = repository.get_recent_sync_runs(limit=limit)
 
                     if not recent_runs:
                         click.echo("No sync runs found")
@@ -233,10 +284,12 @@ def status(ctx: click.Context, limit: int) -> None:
 
                     for run in recent_runs:
                         status_icon = "✓" if run.status == "completed" else "✗"
-                        click.echo(
-                            f"{status_icon} {run.started_at} | {run.combination_name} | "
-                            f"{run.status} | {run.actions_count} actions"
+                        status_line = (
+                            f"{status_icon} {run.started_at} | "
+                            f"{run.combination_name} | {run.status} | "
+                            f"{run.actions_count} actions"
                         )
+                        click.echo(status_line)
                         if run.error_message:
                             click.echo(f"  Error: {run.error_message}")
             finally:
