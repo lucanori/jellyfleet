@@ -138,14 +138,18 @@ def test_merge_config_with_env_empty_overrides():
 
     config = AppConfig(
         servers={"test_server": ServerConfig(url="http://test", token="test")},
-        combinations=[CombinationConfig(
-            name="test",
-            father="test_server",
-            children=[ChildConfig(
-                server="test_server",
-                domains=[Domain.users],
-            )],
-        )],
+        combinations=[
+            CombinationConfig(
+                name="test",
+                father="test_server",
+                children=[
+                    ChildConfig(
+                        server="test_server",
+                        domains=[Domain.users],
+                    )
+                ],
+            )
+        ],
     )
 
     result = merge_config_with_env(config, {})
@@ -163,14 +167,18 @@ def test_merge_config_with_env_simple_override():
 
     config = AppConfig(
         servers={"test_server": ServerConfig(url="http://test", token="test")},
-        combinations=[CombinationConfig(
-            name="test",
-            father="test_server",
-            children=[ChildConfig(
-                server="test_server",
-                domains=[Domain.users],
-            )],
-        )],
+        combinations=[
+            CombinationConfig(
+                name="test",
+                father="test_server",
+                children=[
+                    ChildConfig(
+                        server="test_server",
+                        domains=[Domain.users],
+                    )
+                ],
+            )
+        ],
         runtime={"dry_run": False},
     )
 
@@ -191,14 +199,18 @@ def test_merge_config_with_env_nested_override():
 
     config = AppConfig(
         servers={"test": ServerConfig(url="http://old", token="old")},
-        combinations=[CombinationConfig(
-            name="test",
-            father="test",
-            children=[ChildConfig(
-                server="test",
-                domains=[Domain.users],
-            )],
-        )],
+        combinations=[
+            CombinationConfig(
+                name="test",
+                father="test",
+                children=[
+                    ChildConfig(
+                        server="test",
+                        domains=[Domain.users],
+                    )
+                ],
+            )
+        ],
     )
 
     overrides = {"servers": {"test": {"url": "http://new"}}}

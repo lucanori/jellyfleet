@@ -119,10 +119,16 @@ class TestLibrarySync:
         sample_father_libraries,
         sample_child_libraries,
     ):
-        library_sync.father_libraries.get_libraries = AsyncMock(return_value=sample_father_libraries)
-        library_sync.child_libraries.get_libraries = AsyncMock(return_value=sample_child_libraries)
+        library_sync.father_libraries.get_libraries = AsyncMock(
+            return_value=sample_father_libraries
+        )
+        library_sync.child_libraries.get_libraries = AsyncMock(
+            return_value=sample_child_libraries
+        )
 
-        library_sync.child_libraries.create_library = AsyncMock(return_value={"Id": "new-tvshows-id"})
+        library_sync.child_libraries.create_library = AsyncMock(
+            return_value={"Id": "new-tvshows-id"}
+        )
         library_sync.child_libraries.delete_library = AsyncMock(return_value=None)
         library_sync.child_libraries.update_library = AsyncMock(return_value=None)
 

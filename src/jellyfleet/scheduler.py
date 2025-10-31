@@ -99,7 +99,9 @@ class Scheduler:
                                     child_client=child_client,
                                     repository=repository,
                                     combination_name=f"{combo.name}-{child_config.server}",
-                                    domains=[domain.value for domain in child_config.domains],
+                                    domains=[
+                                        domain.value for domain in child_config.domains
+                                    ],
                                 )
 
                                 sync_run = await orchestrator.run_sync(dry_run=False)

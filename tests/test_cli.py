@@ -46,7 +46,10 @@ runtime:
         with patch("jellyfleet.cli.load_config") as mock_load:
             mock_config = MagicMock()
             mock_config.combinations = [
-                MagicMock(name="test-combo", children=[MagicMock(domains=["users", "settings"])])
+                MagicMock(
+                    name="test-combo",
+                    children=[MagicMock(domains=["users", "settings"])],
+                )
             ]
             mock_load.return_value = mock_config
 
@@ -77,7 +80,14 @@ runtime:
     @patch("jellyfleet.cli.JellyfinClient")
     @patch("jellyfleet.cli.SyncOrchestrator")
     def test_sync_command_dry_run_success(
-        self, mock_orchestrator, mock_client, mock_load, mock_session_factory, mock_engine, runner, config_file
+        self,
+        mock_orchestrator,
+        mock_client,
+        mock_load,
+        mock_session_factory,
+        mock_engine,
+        runner,
+        config_file,
     ):
         from jellyfleet.config.models import Domain
 
@@ -85,7 +95,12 @@ runtime:
         combo_mock = MagicMock()
         combo_mock.name = "main-sync"
         combo_mock.father = "father"
-        combo_mock.children = [MagicMock(server="child", domains=[Domain.users, Domain.settings, Domain.libraries])]
+        combo_mock.children = [
+            MagicMock(
+                server="child",
+                domains=[Domain.users, Domain.settings, Domain.libraries],
+            )
+        ]
         mock_config.combinations = [combo_mock]
 
         father_token = MagicMock()
@@ -94,8 +109,12 @@ runtime:
         child_token.get_secret_value.return_value = "child-token"
 
         mock_config.servers = {
-            "father": MagicMock(url="http://father.jellyfin.local:8096", token=father_token),
-            "child": MagicMock(url="http://child.jellyfin.local:8097", token=child_token)
+            "father": MagicMock(
+                url="http://father.jellyfin.local:8096", token=father_token
+            ),
+            "child": MagicMock(
+                url="http://child.jellyfin.local:8097", token=child_token
+            ),
         }
         mock_load.return_value = mock_config
 
@@ -121,7 +140,9 @@ runtime:
     @patch("jellyfleet.cli.create_database_engine")
     @patch("jellyfleet.cli.create_session_factory")
     @patch("jellyfleet.cli.load_config")
-    def test_sync_command_no_config(self, mock_load, mock_session_factory, mock_engine, runner):
+    def test_sync_command_no_config(
+        self, mock_load, mock_session_factory, mock_engine, runner
+    ):
         result = runner.invoke(cli, ["sync"])
 
         assert result.exit_code == 1
@@ -130,7 +151,9 @@ runtime:
     @patch("jellyfleet.cli.create_database_engine")
     @patch("jellyfleet.cli.create_session_factory")
     @patch("jellyfleet.cli.load_config")
-    def test_status_command_no_runs(self, mock_load, mock_session_factory, mock_engine, runner, config_file):
+    def test_status_command_no_runs(
+        self, mock_load, mock_session_factory, mock_engine, runner, config_file
+    ):
         mock_session = MagicMock()
         mock_session_factory.return_value.__enter__.return_value = mock_session
 
@@ -147,7 +170,9 @@ runtime:
     @patch("jellyfleet.cli.create_database_engine")
     @patch("jellyfleet.cli.create_session_factory")
     @patch("jellyfleet.cli.load_config")
-    def test_status_command_with_runs(self, mock_load, mock_session_factory, mock_engine, runner, config_file):
+    def test_status_command_with_runs(
+        self, mock_load, mock_session_factory, mock_engine, runner, config_file
+    ):
         mock_session = MagicMock()
         mock_session_factory.return_value.__enter__.return_value = mock_session
 
@@ -167,7 +192,10 @@ runtime:
 
             assert result.exit_code == 0
             assert "Recent 1 sync runs:" in result.output
-            assert "✓ 2025-10-31 17:30:00 | main-sync-child | completed | 5 actions" in result.output
+            assert (
+                "✓ 2025-10-31 17:30:00 | main-sync-child | completed | 5 actions"
+                in result.output
+            )
 
     def test_status_command_no_config(self, runner):
         result = runner.invoke(cli, ["status"])

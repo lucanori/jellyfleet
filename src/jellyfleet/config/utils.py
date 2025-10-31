@@ -24,12 +24,18 @@ def get_config_from_env() -> dict[str, Any]:
 
     dry_run = os.getenv("JELLYFLEET_DRY_RUN")
     if dry_run is not None:
-        config_overrides.setdefault("runtime", {})["dry_run"] = dry_run.lower() in ("true", "1", "yes")
+        config_overrides.setdefault("runtime", {})["dry_run"] = dry_run.lower() in (
+            "true",
+            "1",
+            "yes",
+        )
 
     return config_overrides
 
 
-def merge_config_with_env(config: AppConfig, env_overrides: dict[str, Any]) -> AppConfig:
+def merge_config_with_env(
+    config: AppConfig, env_overrides: dict[str, Any]
+) -> AppConfig:
     if not env_overrides:
         return config
 
@@ -57,7 +63,9 @@ def validate_config_file_path(path: str | Path) -> Path:
         raise ValueError(f"Configuration path is not a file: {config_path}")
 
     if config_path.suffix not in (".yaml", ".yml"):
-        raise ValueError(f"Configuration file must be YAML (.yaml or .yml): {config_path}")
+        raise ValueError(
+            f"Configuration file must be YAML (.yaml or .yml): {config_path}"
+        )
 
     return config_path.resolve()
 

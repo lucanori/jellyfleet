@@ -176,7 +176,9 @@ class TestSettingsSync:
 
         settings_sync.child_settings.update_server_configuration.assert_called_once()
 
-        call_args = settings_sync.child_settings.update_server_configuration.call_args[0][0]
+        call_args = settings_sync.child_settings.update_server_configuration.call_args[
+            0
+        ][0]
         assert call_args["ServerName"] == "Father Server"
         assert call_args["EnableUPnP"] is True
         assert "UnsyncableField" not in call_args

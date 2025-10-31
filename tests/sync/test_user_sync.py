@@ -146,10 +146,18 @@ class TestUserSync:
         user_sync.child_users.get_users = AsyncMock(return_value=child_users)
 
         # Configure policy and config mocks to return different values
-        user_sync.father_users.get_user_policy = AsyncMock(return_value={"IsAdministrator": True})
-        user_sync.child_users.get_user_policy = AsyncMock(return_value={"IsAdministrator": False})
-        user_sync.father_users.get_user_configuration = AsyncMock(return_value={"AudioLanguagePreference": "en"})
-        user_sync.child_users.get_user_configuration = AsyncMock(return_value={"AudioLanguagePreference": "es"})
+        user_sync.father_users.get_user_policy = AsyncMock(
+            return_value={"IsAdministrator": True}
+        )
+        user_sync.child_users.get_user_policy = AsyncMock(
+            return_value={"IsAdministrator": False}
+        )
+        user_sync.father_users.get_user_configuration = AsyncMock(
+            return_value={"AudioLanguagePreference": "en"}
+        )
+        user_sync.child_users.get_user_configuration = AsyncMock(
+            return_value={"AudioLanguagePreference": "es"}
+        )
 
         mock_child_client.update_user = AsyncMock(return_value=None)
         mock_child_client.update_user_policy = AsyncMock(return_value=None)
@@ -205,8 +213,12 @@ class TestUserSync:
         father_config = {"AudioLanguagePreference": "en", "SubtitleMode": "Default"}
         child_config = {"AudioLanguagePreference": "es", "SubtitleMode": "Default"}
 
-        user_sync.father_users.get_user_configuration = AsyncMock(return_value=father_config)
-        user_sync.child_users.get_user_configuration = AsyncMock(return_value=child_config)
+        user_sync.father_users.get_user_configuration = AsyncMock(
+            return_value=father_config
+        )
+        user_sync.child_users.get_user_configuration = AsyncMock(
+            return_value=child_config
+        )
         mock_child_client.update_user_configuration = AsyncMock(return_value=None)
 
         results = {"errors": [], "modified": []}
@@ -227,11 +239,13 @@ class TestUserSync:
     async def test_sync_users_with_errors(
         self, user_sync, mock_father_client, mock_child_client
     ):
-        user_sync.father_users.get_users = AsyncMock(return_value=[
-            {"Id": "father-1", "Name": "Alice"}
-        ])
+        user_sync.father_users.get_users = AsyncMock(
+            return_value=[{"Id": "father-1", "Name": "Alice"}]
+        )
         user_sync.child_users.get_users = AsyncMock(return_value=[])
-        user_sync.child_users.create_user = AsyncMock(side_effect=Exception("API Error"))
+        user_sync.child_users.create_user = AsyncMock(
+            side_effect=Exception("API Error")
+        )
 
         result = await user_sync.sync_users(dry_run=False)
 

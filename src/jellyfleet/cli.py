@@ -57,7 +57,9 @@ def cli(ctx: click.Context, config: Path | None, log_level: str) -> None:
     help="Specific combination name to sync (default: all)",
 )
 @click.pass_context
-def sync(ctx: click.Context, dry_run: bool, force: bool, combination: str | None) -> None:
+def sync(
+    ctx: click.Context, dry_run: bool, force: bool, combination: str | None
+) -> None:
     """Run synchronization between Jellyfin instances"""
 
     if force:
@@ -80,9 +82,13 @@ def sync(ctx: click.Context, dry_run: bool, force: bool, combination: str | None
                 repository = SyncRepository(session)
 
                 if combination:
-                    combinations = [c for c in config.combinations if c.name == combination]
+                    combinations = [
+                        c for c in config.combinations if c.name == combination
+                    ]
                     if not combinations:
-                        click.echo(f"Error: Combination '{combination}' not found", err=True)
+                        click.echo(
+                            f"Error: Combination '{combination}' not found", err=True
+                        )
                         sys.exit(1)
                 else:
                     combinations = config.combinations
@@ -119,7 +125,9 @@ def sync(ctx: click.Context, dry_run: bool, force: bool, combination: str | None
                                 child_client=child_client,
                                 repository=repository,
                                 combination_name=f"{combo.name}-{child_config.server}",
-                                domains=[domain.value for domain in child_config.domains],
+                                domains=[
+                                    domain.value for domain in child_config.domains
+                                ],
                             )
 
                             sync_run = await orchestrator.run_sync(dry_run=dry_run)
@@ -136,10 +144,13 @@ def sync(ctx: click.Context, dry_run: bool, force: bool, combination: str | None
                                 total_errors += 1
 
                         except Exception as err:
-                            click.echo(f"Failed to sync {combo.name}-{child_config.server}: {err}", err=True)
+                            click.echo(
+                                f"Failed to sync {combo.name}-{child_config.server}: {err}",
+                                err=True,
+                            )
                             total_errors += 1
 
-                click.echo(f"\n{'='*50}")
+                click.echo(f"\n{'=' * 50}")
                 click.echo(f"Summary: {total_actions} actions, {total_errors} errors")
 
                 if total_errors > 0:
@@ -166,6 +177,7 @@ def validate(ctx: click.Context) -> None:
         sys.exit(1)
 
     try:
+
         async def _validate():
             config = await load_config(str(config_path))
             click.echo("✓ Configuration file is valid")
@@ -173,7 +185,9 @@ def validate(ctx: click.Context) -> None:
 
             for combo in config.combinations:
                 total_domains = sum(len(child.domains) for child in combo.children)
-                click.echo(f"  - {combo.name}: {total_domains} domain(s) across {len(combo.children)} child/children")
+                click.echo(
+                    f"  - {combo.name}: {total_domains} domain(s) across {len(combo.children)} child/children"
+                )
 
         asyncio.run(_validate())
 
@@ -200,6 +214,7 @@ def status(ctx: click.Context, limit: int) -> None:
         sys.exit(1)
 
     try:
+
         async def _status():
             engine = create_database_engine("jellyfleet.db")
             session_factory = create_session_factory(engine)

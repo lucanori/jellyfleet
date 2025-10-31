@@ -1,4 +1,3 @@
-
 from jellyfleet.sync.diff import (
     DiffResult,
     compare_libraries,
