@@ -1,17 +1,17 @@
 FROM python:3.12-alpine
 
-RUN addgroup -S jellyfleet && adduser -S jellyfleet -G jellyfleet
+RUN addgroup -S python && adduser -S python -G python
 
 WORKDIR /app
 
 ENV PATH="/app/.venv/bin:$PATH"
 
-COPY --chown=jellyfleet:jellyfleet . .
+COPY --chown=python:python . .
 
-RUN pip install --no-cache-dir uv && \
-    uv sync --frozen --no-dev && \
-    pip cache purge
+RUN pip install --no-cache-dir uv
 
-USER jellyfleet:jellyfleet
+USER python:python
 
-CMD ["uv", "run", "python", "-c", "print('jellyfleet CLI placeholder')"]
+RUN uv sync --frozen --no-dev && pip cache purge
+
+CMD ["jellyfleet", "--help"]
