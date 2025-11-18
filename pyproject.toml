@@ -1,0 +1,49 @@
+[project]
+name = "jellyfleet"
+version = "0.1.0"
+description = "Configuration-driven synchronization service for Jellyfin instances"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx",
+    "pydantic",
+    "sqlalchemy",
+    "alembic",
+    "croniter",
+    "structlog",
+    "python-dotenv",
+    "PyYAML",
+    "click",
+]
+
+[project.scripts]
+jellyfleet = "jellyfleet.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-asyncio",
+    "ruff",
+    "pytest-httpx",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "DTZ", "T10", "EM", "ISC", "ICN", "G", "PIE", "T20", "PT", "Q", "RSE", "RET", "SIM", "TID", "TCH", "ARG", "PTH", "ERA", "PGH", "PL", "TRY", "NPY", "RUF"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "--cov=src --cov-report=term-missing"
+asyncio_mode = "auto"

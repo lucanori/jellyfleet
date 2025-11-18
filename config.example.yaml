@@ -1,0 +1,23 @@
+servers:
+  father:
+    url: "http://father.jellyfin.local:8096"
+    token: "father-api-key-here"
+  child:
+    url: "http://child.jellyfin.local:8097"
+    token: "child-api-key-here"
+
+combinations:
+  - name: main-sync
+    father: father
+    children:
+      - server: child
+        domains:
+          - users
+          - settings
+          - libraries
+
+scheduler:
+  cron: "0 */6 * * *"
+
+runtime:
+  dry_run: true

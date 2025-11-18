@@ -1,0 +1,27 @@
+name: jellyfleet
+
+services:
+  jellyfleet:
+    image: ghcr.io/lucanori/jellyfleet:alpha
+    container_name: jellyfleet
+    restart: unless-stopped
+    volumes:
+      - ${APPDATA}/jellyfleet/config.yaml:/app/config.yaml:ro
+      - ${APPDATA}/jellyfleet:/app/data:rw
+    ports:
+      - "9000:9000"
+    environment:
+      # === Database Configuration ===
+      # - JELLYFLEET_DB_PATH=/app/data/jellyfleet.db
+
+      # === Logging Configuration ===
+      # - JELLYFLEET_LOG_LEVEL=INFO
+
+      # === Security Configuration ===
+      # - JELLYFLEET_SECRETS_DIR=./secrets
+    healthcheck:
+      test: ["CMD", "uv", "run", "jellyfleet", "--help"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

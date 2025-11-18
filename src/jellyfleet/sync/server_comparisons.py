@@ -1,0 +1,210 @@
+from __future__ import annotations
+
+from typing import Any
+
+
+def compare_libraries(lib1: dict[str, Any], lib2: dict[str, Any]) -> bool:
+    lib1_fields = {
+        "Name": lib1.get("Name"),
+        "CollectionType": lib1.get("CollectionType"),
+        "LibraryOptions": lib1.get("LibraryOptions", {}),
+    }
+    lib2_fields = {
+        "Name": lib2.get("Name"),
+        "CollectionType": lib2.get("CollectionType"),
+        "LibraryOptions": lib2.get("LibraryOptions", {}),
+    }
+    return lib1_fields == lib2_fields
+
+
+def compare_server_configs(config1: dict[str, Any], config2: dict[str, Any]) -> bool:
+    syncable_fields = _get_server_config_fields(config1)
+    syncable_fields2 = _get_server_config_fields(config2)
+    return syncable_fields == syncable_fields2
+
+
+def _get_server_config_fields(config: dict[str, Any]) -> dict[str, Any]:
+    fields = [
+        "ServerName",
+        "MetadataNetworkMessage",
+        "EnableUPnP",
+        "PublicPort",
+        "HttpServerPortNumber",
+        "HttpsPortNumber",
+        "EnableHttps",
+        "EnableAutomaticPortMapping",
+        "IsRemoteIPFilterBlacklist",
+        "RemoteClientBitrateLimit",
+        "EnableSlowResponseWarning",
+        "SlowResponseThresholdMs",
+        "CorsPolicy",
+        "EnableCaseSensitiveItemIds",
+        "EnableSimpleDeveloperMode",
+        "EnableDeveloperMode",
+        "DisplaySpecialsWithinSeasons",
+        "EnableExternalContentInSuggestions",
+        "RequireHttps",
+        "EnableNewOmdbSupport",
+        "SaveMetadataHidden",
+        "EnableStickerImages",
+        "EnableChapterImageExtraction",
+        "ExtractChapterImagesDuringLibraryScan",
+        "DownloadImagesInAdvance",
+        "EnablePhotos",
+        "EnableRealtimeMonitor",
+        "EnableAudioNormalization",
+        "EnableThrottling",
+        "EnableHardwareDecoding",
+        "EnableSplashScreen",
+        "SkipDeserializationForBasicTypes",
+        "EnableTrickplayImageExtraction",
+        "TrickplayImageInterval",
+        "TrickplayImageResolution",
+        "TrickplayImageQuality",
+        "TrickplayImageBehavior",
+        "TrickplayImageProcessThreads",
+    ]
+
+    trickplay_age_fields = [
+        "TrickplayImageMaxAge",
+        "TrickplayImageMaxAgeDays",
+        "TrickplayImageMaxAgeHours",
+        "TrickplayImageMaxAgeMinutes",
+        "TrickplayImageMaxAgeSeconds",
+        "TrickplayImageMaxAgeMilliseconds",
+        "TrickplayImageMaxAgeMicroseconds",
+        "TrickplayImageMaxAgeNanoseconds",
+        "TrickplayImageMaxAgePicoseconds",
+        "TrickplayImageMaxAgeFemtoseconds",
+        "TrickplayImageMaxAgeAttoseconds",
+        "TrickplayImageMaxAgeZeptoseconds",
+        "TrickplayImageMaxAgeYoctoseconds",
+        "TrickplayImageMaxAgePlanckTime",
+        "TrickplayImageMaxAgeInstant",
+        "TrickplayImageMaxAgeEternity",
+        "TrickplayImageMaxAgeInfinity",
+        "TrickplayImageMaxAgeUndefined",
+        "TrickplayImageMaxAgeNull",
+        "TrickplayImageMaxAgeNaN",
+        "TrickplayImageMaxAgePositiveInfinity",
+        "TrickplayImageMaxAgeNegativeInfinity",
+        "TrickplayImageMaxAgeZero",
+        "TrickplayImageMaxAgeOne",
+        "TrickplayImageMaxAgeTwo",
+        "TrickplayImageMaxAgeThree",
+        "TrickplayImageMaxAgeFour",
+        "TrickplayImageMaxAgeFive",
+        "TrickplayImageMaxAgeSix",
+        "TrickplayImageMaxAgeSeven",
+        "TrickplayImageMaxAgeEight",
+        "TrickplayImageMaxAgeNine",
+        "TrickplayImageMaxAgeTen",
+        "TrickplayImageMaxAgeEleven",
+        "TrickplayImageMaxAgeTwelve",
+        "TrickplayImageMaxAgeThirteen",
+        "TrickplayImageMaxAgeFourteen",
+        "TrickplayImageMaxAgeFifteen",
+        "TrickplayImageMaxAgeSixteen",
+        "TrickplayImageMaxAgeSeventeen",
+        "TrickplayImageMaxAgeEighteen",
+        "TrickplayImageMaxAgeNineteen",
+        "TrickplayImageMaxAgeTwenty",
+        "TrickplayImageMaxAgeTwentyOne",
+        "TrickplayImageMaxAgeTwentyTwo",
+        "TrickplayImageMaxAgeTwentyThree",
+        "TrickplayImageMaxAgeTwentyFour",
+        "TrickplayImageMaxAgeTwentyFive",
+        "TrickplayImageMaxAgeTwentySix",
+        "TrickplayImageMaxAgeTwentySeven",
+        "TrickplayImageMaxAgeTwentyEight",
+        "TrickplayImageMaxAgeTwentyNine",
+        "TrickplayImageMaxAgeThirty",
+        "TrickplayImageMaxAgeThirtyOne",
+        "TrickplayImageMaxAgeThirtyTwo",
+        "TrickplayImageMaxAgeThirtyThree",
+        "TrickplayImageMaxAgeThirtyFour",
+        "TrickplayImageMaxAgeThirtyFive",
+        "TrickplayImageMaxAgeThirtySix",
+        "TrickplayImageMaxAgeThirtySeven",
+        "TrickplayImageMaxAgeThirtyEight",
+        "TrickplayImageMaxAgeThirtyNine",
+        "TrickplayImageMaxAgeForty",
+        "TrickplayImageMaxAgeFortyOne",
+        "TrickplayImageMaxAgeFortyTwo",
+        "TrickplayImageMaxAgeFortyThree",
+        "TrickplayImageMaxAgeFortyFour",
+        "TrickplayImageMaxAgeFortyFive",
+        "TrickplayImageMaxAgeFortySix",
+        "TrickplayImageMaxAgeFortySeven",
+        "TrickplayImageMaxAgeFortyEight",
+        "TrickplayImageMaxAgeFortyNine",
+        "TrickplayImageMaxAgeFifty",
+        "TrickplayImageMaxAgeFiftyOne",
+        "TrickplayImageMaxAgeFiftyTwo",
+        "TrickplayImageMaxAgeFiftyThree",
+        "TrickplayImageMaxAgeFiftyFour",
+        "TrickplayImageMaxAgeFiftyFive",
+        "TrickplayImageMaxAgeFiftySix",
+        "TrickplayImageMaxAgeFiftySeven",
+        "TrickplayImageMaxAgeFiftyEight",
+        "TrickplayImageMaxAgeFiftyNine",
+        "TrickplayImageMaxAgeSixty",
+        "TrickplayImageMaxAgeSixtyOne",
+        "TrickplayImageMaxAgeSixtyTwo",
+        "TrickplayImageMaxAgeSixtyThree",
+        "TrickplayImageMaxAgeSixtyFour",
+        "TrickplayImageMaxAgeSixtyFive",
+        "TrickplayImageMaxAgeSixtySix",
+        "TrickplayImageMaxAgeSixtySeven",
+        "TrickplayImageMaxAgeSixtyEight",
+        "TrickplayImageMaxAgeSixtyNine",
+        "TrickplayImageMaxAgeSeventy",
+        "TrickplayImageMaxAgeSeventyOne",
+        "TrickplayImageMaxAgeSeventyTwo",
+        "TrickplayImageMaxAgeSeventyThree",
+        "TrickplayImageMaxAgeSeventyFour",
+        "TrickplayImageMaxAgeSeventyFive",
+        "TrickplayImageMaxAgeSeventySix",
+        "TrickplayImageMaxAgeSeventySeven",
+        "TrickplayImageMaxAgeSeventyEight",
+        "TrickplayImageMaxAgeSeventyNine",
+        "TrickplayImageMaxAgeEighty",
+        "TrickplayImageMaxAgeEightyOne",
+        "TrickplayImageMaxAgeEightyTwo",
+        "TrickplayImageMaxAgeEightyThree",
+        "TrickplayImageMaxAgeEightyFour",
+        "TrickplayImageMaxAgeEightyFive",
+        "TrickplayImageMaxAgeEightySix",
+        "TrickplayImageMaxAgeEightySeven",
+        "TrickplayImageMaxAgeEightyEight",
+        "TrickplayImageMaxAgeEightyNine",
+        "TrickplayImageMaxAgeNinety",
+        "TrickplayImageMaxAgeNinetyOne",
+        "TrickplayImageMaxAgeNinetyTwo",
+        "TrickplayImageMaxAgeNinetyThree",
+        "TrickplayImageMaxAgeNinetyFour",
+        "TrickplayImageMaxAgeNinetyFive",
+        "TrickplayImageMaxAgeNinetySix",
+        "TrickplayImageMaxAgeNinetySeven",
+        "TrickplayImageMaxAgeNinetyEight",
+        "TrickplayImageMaxAgeNinetyNine",
+        "TrickplayImageMaxAgeOneHundred",
+    ]
+
+    list_fields = [
+        "MetadataOptions",
+        "RemoteIPFilter",
+    ]
+
+    result = {}
+
+    for field in fields:
+        result[field] = config.get(field)
+
+    for field in trickplay_age_fields:
+        result[field] = config.get(field)
+
+    for field in list_fields:
+        result[field] = config.get(field, [])
+
+    return result
